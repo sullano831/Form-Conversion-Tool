@@ -1,0 +1,4 @@
+Layer	Version / level	Notes
+HTML	HTML5	Standard <!DOCTYPE html>
+CSS	CSS3 / modern	Variables, Grid, Flexbox, etc.
+JS	ES6+ (ES2015+)	const/let, arrows, templates

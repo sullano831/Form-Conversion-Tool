@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Fast Forms</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body class="bootstrap">
+    <div class="container">
+        <!-- Header -->
+        <!-- <header class="app-header">
+            <h1>Fast Fast Forms</h1>
+            <p class="subtitle">Transform text to form fields with ease</p>
+        </header> -->
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Version Selector -->
+            <section class="section version-section">
+                <div class="version-selector version-selector--one-line">
+                    <h3 class="version-selector-title">Select Version Format</h3>
+                    <div class="version-buttons">
+                        <button id="bootstrapVersion" class="btn btn-version active" onclick="switchVersion('bootstrap')">
+                            <span class="version-icon"></span>
+                            BOOTSTRAP VERSION
+                        </button>
+                        <button id="version3" class="btn btn-version" onclick="switchVersion('version3')">
+                            <span class="version-icon"></span>
+                            VERSION 2 - Modern Forms
+                        </button>
+                    </div>
+                    <a href="https://file-converter-delta-nine.vercel.app/" class="btn btn-nav" target="_blank">FILE CONVERTER</a>
+                </div>
+            </section>
+
+            <!-- Text Transformer Section -->
+            <section class="section transformer-section">
+                <div class="section-header">
+                    <h2>Text to Form Fields</h2>
+                    <div class="steps-indicator">
+                        <span class="step-dot active"></span>
+                        <span class="step-dot"></span>
+                        <span class="step-dot"></span>
+                        <span class="step-dot"></span>
+                    </div>
+                </div>
+
+                <!-- Steps -->
+                <div class="steps-grid">
+                    <div class="step-card">
+                        <div class="step-icon">1</div>
+                        <div class="step-text">
+                            <strong>Configure</strong> - Set underscore prefix
+                        </div>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-icon">2</div>
+                        <div class="step-text">
+                            <strong>Paste</strong> - Add your field names
+                        </div>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-icon">3</div>
+                        <div class="step-text">
+                            <strong>Select</strong> - Choose field types
+                        </div>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-icon">4</div>
+                        <div class="step-text">
+                            <strong>Mark</strong> - Set required fields
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Underscore Config -->
+                <div class="config-card">
+                    <label for="underscoreCount">Underscore prefix:</label>
+                    <div class="config-input-group">
+                        <input type="number" id="underscoreCount" min="0" max="10" value="0" onchange="transformText()" oninput="transformText()">
+                        <span class="config-hint">Example: "4" + "Name" = "____Name"</span>
+                    </div>
+                </div>
+
+                <!-- Transformer -->
+                <div class="transformer-grid">
+                    <div class="input-card">
+                        <label for="transformInput">Input Text</label>
+                        <textarea id="transformInput" placeholder="Paste your field names here..." oninput="transformText()"></textarea>
+                    </div>
+                    <div class="output-card">
+                        <label>Output Fields</label>
+                        <div id="transformOutputContainer" class="output-container">
+                            <div class="placeholder-text">Transformed fields will appear here...</div>
+                        </div>
+                        <button id="copyTransformBtn" onclick="copyTransformedText()" class="btn btn-primary">Copy</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Generated Code Section -->
+            <section class="section code-section">
+                <div class="section-header">
+                    <h2>Generated Form Code</h2>
+                    <div class="merge-hint">
+                        <span class="hint-icon">💡</span>
+                        <span>Highlight fields to merge into columns</span>
+                    </div>
+                </div>
+
+                <div class="code-card">
+                    <textarea id="generatedCodeOutput" placeholder="Generated form code will appear here..."></textarea>
+                    <div class="code-buttons">
+                        <button id="copyGeneratedBtn" onclick="copyGeneratedCode()" class="btn btn-primary">Copy</button>
+                        <button id="checkDuplicatesBtn" onclick="checkDuplicates()" class="btn btn-secondary">Check Duplicates</button>
+                        <button id="undoColumnMergeBtn" class="undo-merge-btn">Undo Merge</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Validation Code Section -->
+            <section class="section validation-section">
+                <div class="section-header">
+                    <h2>Form Validation Code</h2>
+                    <div class="validation-hint">
+                        <span class="hint-icon">🔒</span>
+                        <span>jQuery Validate code for required fields</span>
+                    </div>
+                </div>
+
+                <div class="validation-card">
+                    <textarea id="validationCodeOutput" placeholder="Validation code will appear here when required fields are set..." readonly></textarea>
+                    <div class="validation-buttons">
+                        <button id="copyValidationBtn" onclick="copyValidationCode()" class="btn btn-primary">Copy</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Toolbox Section -->
+            <section class="section toolbox-section">
+                <div class="section-header">
+                    <h2>Field Types</h2>
+                    <p class="section-subtitle">Click to generate reference code</p>
+                </div>
+
+                <div class="toolbox-grid">
+                    <div class="toolbox-card">
+                        <div class="search-container">
+                            <input type="text" id="fieldTypeSearch" placeholder="Search field types..." class="search-input">
+                            <span class="search-icon">🔍</span>
+                        </div>
+                        <div class="button-grid" id="fieldTypeButtons">
+                            <button onclick="generateCodeForVersion('Age Only')" class="btn btn-tool" data-field-type="age">🎂 Age</button>
+                            <button onclick="generateCodeForVersion('Amount')" class="btn btn-tool" data-field-type="amount">💰 Amount</button>
+                            <button onclick="generateCodeForVersion('Checkbox')" class="btn btn-tool" data-field-type="checkbox">☑️ Checkbox</button>
+                            <button onclick="generateCodeForVersion('Date Picker (Disable Future)')" class="btn btn-tool" data-field-type="date-future">📅 Date Future</button>
+                            <button onclick="generateCodeForVersion('Date Picker (Disable Past)')" class="btn btn-tool" data-field-type="date-past">📅 Date Past</button>
+                            <button onclick="generateCodeForVersion('Dropdown')" class="btn btn-tool" data-field-type="dropdown">📋 Dropdown</button>
+                            <button onclick="generateCodeForVersion('Email')" class="btn btn-tool" data-field-type="email">📧 Email</button>
+                            <button onclick="generateCodeForVersion('Field Header')" class="btn btn-tool" data-field-type="header">📄 Header</button>
+                            <button onclick="generateCodeForVersion('Initial Only')" class="btn btn-tool" data-field-type="initial">✍️ Initials</button>
+                            <button onclick="generateCodeForVersion('Letter Only')" class="btn btn-tool" data-field-type="letter">📝 Letters</button>
+                            <button onclick="generateCodeForVersion('Normal Text')" class="btn btn-tool" data-field-type="text">📝 Text</button>
+                            <button onclick="generateCodeForVersion('Number Only')" class="btn btn-tool" data-field-type="number">🔢 Number</button>
+                            <button onclick="generateCodeForVersion('Phone')" class="btn btn-tool" data-field-type="phone">📞 Phone</button>
+                            <button onclick="generateCodeForVersion('Privacy Policy')" class="btn btn-tool" data-field-type="privacy">🔒 Privacy</button>
+                            <button onclick="generateCodeForVersion('Radio')" class="btn btn-tool" data-field-type="radio">🔘 Radio</button>
+                            <button onclick="generateCodeForVersion('Signature')" class="btn btn-tool" data-field-type="signature">✍️ Signature</button>
+                            <button onclick="generateCodeForVersion('Table')" class="btn btn-tool" data-field-type="table">📊 Table</button>
+                            <button onclick="generateCodeForVersion('Textarea')" class="btn btn-tool" data-field-type="textarea">
+                                <span class="textarea-icon">📝</span>
+                                Textarea
+                            </button>
+                            <button onclick="generateCodeForVersion('Time')" class="btn btn-tool" data-field-type="time">⏰ Time</button>
+                            <button onclick="generateCodeForVersion('Upload File')" class="btn btn-tool" data-field-type="upload">📁 Upload</button>
+                        </div>
+                    </div>
+
+                    <div class="reference-card">
+                        <h3>Reference Code</h3>
+                        <pre id="codeOutput">Click a button above to generate code</pre>
+                        <button id="copyBtn" onclick="copyCode()" class="btn btn-primary">Copy</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Duplicate Detection Modal -->
+    <div id="duplicateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Duplicate Field Names Detected</h3>
+                <span class="close" onclick="closeDuplicateModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>The following field names are duplicated in your code:</p>
+                <div id="duplicateList" class="duplicate-list">
+                    <!-- Duplicate items will be populated here -->
+                </div>
+                <p>Would you like to automatically add underscores to make the names unique?</p>
+            </div>
+            <div class="modal-footer">
+                <button onclick="fixDuplicateNames()" class="btn btn-primary">Yes, Fix Duplicates</button>
+                <button onclick="closeDuplicateModal()" class="btn btn-secondary">No, Keep As Is</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Duplicates Found Modal -->
+    <div id="noDuplicatesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>No Duplicates Found</h3>
+                <span class="close" onclick="closeNoDuplicatesModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>✅ Great! No duplicate field names were detected in your code.</p>
+                <p>All field names are unique and ready to use.</p>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeNoDuplicatesModal()" class="btn btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scroll to Top Button -->
+    <button id="scrollToTopBtn" class="scroll-to-top-btn" title="Scroll to top">
+        <span class="scroll-to-top-icon">↑</span>
+    </button>
+
+    <script src="js/script.js"></script>
+</body>
+
+</html>
