@@ -48,8 +48,8 @@ function switchVersion(version) {
 }
 
 // --- COLUMN MERGE FEATURE ---
-let lastMerged = null;
-let lastMergedSelection = null;
+// Stack of textarea contents before each merge (undo one by one)
+let mergeUndoStack = [];
 
 function getSelectedCodeBlocks() {
     const textarea = document.getElementById('generatedCodeOutput');
@@ -162,8 +162,7 @@ function mergeSelectedBlocksToColumns() {
 
     const selection = getSelectedCodeBlocks();
     if (!selection) return;
-    lastMerged = value;
-    lastMergedSelection = { start: selection.start, end: selection.end };
+    mergeUndoStack.push(value);
 
     // Use a more reliable approach to extract column blocks
     const colBlocks = [];
@@ -212,6 +211,7 @@ function mergeSelectedBlocksToColumns() {
     const newValue = value.substring(0, selection.start) + mergedRow + value.substring(selection.end);
     textarea.value = newValue;
     textarea.setSelectionRange(selection.start, selection.start + mergedRow.length);
+    updateUndoMergeButtonState();
 }
 
 function mergeSelectedBlocksToColumnsVersion3() {
@@ -219,8 +219,7 @@ function mergeSelectedBlocksToColumnsVersion3() {
     const value = textarea.value;
     const selection = getSelectedFormBoxBlocksVersion3();
     if (!selection) return;
-    lastMerged = value;
-    lastMergedSelection = { start: selection.start, end: selection.end };
+    mergeUndoStack.push(value);
 
     console.log('Selected text for Version 3 merging:', selection.selectedText);
 
@@ -256,13 +255,22 @@ function mergeSelectedBlocksToColumnsVersion3() {
     const newValue = value.substring(0, selection.start) + mergedFormBox + value.substring(selection.end);
     textarea.value = newValue;
     textarea.setSelectionRange(selection.start, selection.start + mergedFormBox.length);
+    updateUndoMergeButtonState();
+}
+
+function updateUndoMergeButtonState() {
+    const undoBtn = document.getElementById('undoColumnMergeBtn');
+    if (undoBtn) {
+        undoBtn.disabled = mergeUndoStack.length === 0;
+    }
 }
 
 function undoColumnMerge() {
-    if (!lastMerged) return;
+    if (mergeUndoStack.length === 0) return;
     const textarea = document.getElementById('generatedCodeOutput');
-    textarea.value = lastMerged;
-    lastMerged = null;
+    const previousValue = mergeUndoStack.pop();
+    textarea.value = previousValue;
+    updateUndoMergeButtonState();
 }
 
 // Listen for selection in generatedCodeOutput
@@ -285,7 +293,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const undoBtn = document.getElementById('undoColumnMergeBtn');
     if (undoBtn) {
         undoBtn.onclick = undoColumnMerge;
+        undoBtn.disabled = true; // Start disabled when nothing to undo
     }
+    updateUndoMergeButtonState();
 
     // Set up field type search functionality
     const searchInput = document.getElementById('fieldTypeSearch');
@@ -375,10 +385,10 @@ function generateCode(type) {
 </div>`;
             break;
 
-        case 'Date Picker (Disable Future)':
+        case 'Date Picker':
             code = `<div class="row g-3 mb-3">
   <div class="col-md-4">
-    <?php $input->datepicker('Start_Date', 'Start_Date', '', 'Date1 DisableFuture', '', 'Start Date'); ?>
+    <?php $input->datepicker('Date', 'Date', '', 'Date', '', 'Date'); ?>
   </div>
 </div>`;
             break;
@@ -833,10 +843,7 @@ function generateCodeForVersion(type) {
                 code = `<div class="form_box">
    <div class="form_box_col1">
       <div class="group">
-         <?php
-            $input->label('Start Time', '');
-            $input->fields('Start_Time', 'form_field', 'Start_Time', '');
-         ?>
+         <?php $input->time('Start Time', 'Start_Time', ''); ?>
       </div>
    </div>
 </div>`;
@@ -1022,7 +1029,7 @@ function transformText() {
                                    onblur="setFieldOptions(${index}, this.value)">
                         </div>
                     ` : ''}
-                    ${currentFieldType !== 'header' && currentFieldType !== 'privacy' ? `
+                    ${currentFieldType !== 'header' ? `
                     <button class="required-btn ${fieldRequiredStatus.get(index) ? 'required' : 'not-required'}" onclick="toggleRequired(${index})" data-index="${index}">
                         ${fieldRequiredStatus.get(index) ? 'Required ✓' : 'Required'}
                     </button>
@@ -1215,8 +1222,10 @@ function generateFormCodeBootstrap(inputText) {
         }
         usedFieldNames.add(finalFieldName);
 
-        // Default to not required for initial generation
-        const requiredText = "''";
+        // Check if this field is marked as required (for Docu and other fields)
+        const fieldItem = document.querySelector(`.field-item[data-index="${index}"]`);
+        const isRequired = fieldItem && fieldItem.querySelector('.required-btn') && fieldItem.querySelector('.required-btn').classList.contains('required');
+        const requiredText = isRequired ? "'required'" : "''";
 
         let fieldCode = '';
         const lowerText = originalText.toLowerCase();
@@ -1289,14 +1298,12 @@ function generateFormCodeBootstrap(inputText) {
                 </div>
             </div>`;
             } else if (customFieldType === 'privacy') {
-                // Docu Checkbox with custom text - use incremented naming
-                // Check if this field is marked as required in the DOM
-                const fieldItem = document.querySelector(`.field-item[data-index="${index}"]`);
-                const isRequired = fieldItem && fieldItem.querySelector('.required-btn') && fieldItem.querySelector('.required-btn').classList.contains('required');
+                // Docu Checkbox with custom text - use incremented naming (Bootstrap form-check)
                 privacyPolicyCounter++;
                 const docuFieldName = `Docu${privacyPolicyCounter.toString().padStart(2, '0')}`;
-                fieldCode = `<div class="disclaimer">
-  <p><input type="checkbox" name="${docuFieldName}" style="-webkit-appearance:checkbox" ${isRequired ? 'required' : ''} /> &nbsp;<b>${originalText}</b> </p>
+                fieldCode = `<div class="form-check mb-3 mt-3">
+    <input type="checkbox" class="form-check-input" id="${docuFieldName}" name="${docuFieldName}" ${isRequired ? 'required' : ''}>
+    <label class="form-check-label" for="${docuFieldName}">${originalText}</label>
 </div>`;
             } else {
                 // Default to normal text with form-control
@@ -1309,7 +1316,13 @@ function generateFormCodeBootstrap(inputText) {
         } else if (lowerText.includes('date') || lowerText.includes('birth') || lowerText.includes('dob')) {
             fieldCode = `<div class="row g-3 mb-3">
   <div class="col-md-4">
-    <?php $input->datepicker('${finalFieldName}', '${finalFieldName}', ${requiredText}, 'Date1 DisableFuture', '', '${labelText}'); ?>
+    <?php $input->datepicker('${finalFieldName}', '${finalFieldName}', ${requiredText}, 'Date', '', '${labelText}'); ?>
+  </div>
+</div>`;
+        } else if (lowerText.trim() === 'time' || lowerText.includes('start time') || lowerText.includes('end time')) {
+            fieldCode = `<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <?php $input->time('${labelText}', '${finalFieldName}', ${requiredText}); ?>
   </div>
 </div>`;
         } else if (lowerText.includes('email') || lowerText.includes('e-mail')) {
@@ -1453,9 +1466,10 @@ function generateFormCodeBootstrap(inputText) {
   </div>
 </div>`;
         } else if (lowerText.includes('privacy policy') || lowerText.includes('terms and conditions') || lowerText.includes('data consent') || lowerText.includes('personal information consent')) {
-            // Docu Checkbox - only for specific privacy/consent related text - use original field name
-            fieldCode = `<div class="disclaimer">
-  <p><input type="checkbox" name="${finalFieldName}" style="-webkit-appearance:checkbox" ${isRequired ? 'required' : ''} /> &nbsp;<b>${originalText}</b> </p>
+            // Docu Checkbox - Bootstrap form-check format
+            fieldCode = `<div class="form-check mb-3 mt-3">
+    <input type="checkbox" class="form-check-input" id="${finalFieldName}" name="${finalFieldName}" ${isRequired ? 'required' : ''}>
+    <label class="form-check-label" for="${finalFieldName}">${originalText}</label>
 </div>`;
         } else {
             // Default to normal text field with form-control
@@ -1594,7 +1608,7 @@ function generateFormCodeVersion3(inputText) {
    </div>
 </div>`;
             } else if (customFieldType === 'privacy') {
-                // Docu Checkbox with custom text - use incremented naming
+                // Docu Checkbox - version 3 uses form validation (no HTML required attribute)
                 privacyPolicyCounter++;
                 const docuFieldName = `Docu${privacyPolicyCounter.toString().padStart(2, '0')}`;
                 fieldCode = `<div class="disclaimer">
@@ -1845,7 +1859,7 @@ function generateFormCodeWithRequiredVersion3(inputText, fieldData) {
    </div>
 </div>`;
             } else if (customFieldType === 'privacy') {
-                // Docu Checkbox with custom text - use incremented naming
+                // Docu Checkbox - version 3 uses form validation (no HTML required attribute)
                 privacyPolicyCounter++;
                 const docuFieldName = `Docu${privacyPolicyCounter.toString().padStart(2, '0')}`;
                 fieldCode = `<div class="disclaimer">
@@ -2177,11 +2191,12 @@ function generateFormCodeWithRequiredBootstrap(inputText, fieldData) {
                 </div>
             </div>`;
             } else if (customFieldType === 'privacy') {
-                // Docu Checkbox with custom text - use incremented naming
+                // Docu Checkbox - Bootstrap form-check format
                 privacyPolicyCounter++;
                 const docuFieldName = `Docu${privacyPolicyCounter.toString().padStart(2, '0')}`;
-                fieldCode = `<div class="disclaimer">
-  <p><input type="checkbox" name="${docuFieldName}" style="-webkit-appearance:checkbox" ${isRequired ? 'required' : ''} /> &nbsp;<b>${originalText}</b> </p>
+                fieldCode = `<div class="form-check mb-3 mt-3">
+    <input type="checkbox" class="form-check-input" id="${docuFieldName}" name="${docuFieldName}" ${isRequired ? 'required' : ''}>
+    <label class="form-check-label" for="${docuFieldName}">${originalText}</label>
 </div>`;
             } else {
                 // Default to normal text
@@ -2194,7 +2209,13 @@ function generateFormCodeWithRequiredBootstrap(inputText, fieldData) {
         } else if (lowerText.includes('date') || lowerText.includes('birth') || lowerText.includes('dob')) {
             fieldCode = `<div class="row g-3 mb-3">
   <div class="col-md-4">
-    <?php $input->datepicker('${fieldName}', '${fieldName}', ${requiredText}, 'Date1 DisableFuture', '', '${fieldName}'); ?>
+    <?php $input->datepicker('${fieldName}', '${fieldName}', ${requiredText}, 'Date', '', '${fieldName}'); ?>
+  </div>
+</div>`;
+        } else if (lowerText.trim() === 'time' || lowerText.includes('start time') || lowerText.includes('end time')) {
+            fieldCode = `<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <?php $input->time('${originalText}', '${fieldName}', ${requiredText}); ?>
   </div>
 </div>`;
         } else if (lowerText.includes('email') || lowerText.includes('e-mail')) {
@@ -2335,9 +2356,10 @@ function generateFormCodeWithRequiredBootstrap(inputText, fieldData) {
   </div>
 </div>`;
         } else if (lowerText.includes('privacy policy') || lowerText.includes('terms and conditions') || lowerText.includes('data consent') || lowerText.includes('personal information consent')) {
-            // Docu Checkbox - only for specific privacy/consent related text - use original field name
-            fieldCode = `<div class="disclaimer">
-  <p><input type="checkbox" name="${fieldName}" style="-webkit-appearance:checkbox" ${isRequired ? 'required' : ''} /> &nbsp;<b>${originalText}</b> </p>
+            // Docu Checkbox - Bootstrap form-check format
+            fieldCode = `<div class="form-check mb-3 mt-3">
+    <input type="checkbox" class="form-check-input" id="${fieldName}" name="${fieldName}" ${isRequired ? 'required' : ''}>
+    <label class="form-check-label" for="${fieldName}">${originalText}</label>
 </div>`;
         } else {
             // Default to normal text field with form-control
@@ -2423,49 +2445,69 @@ function generateValidationCode() {
     const lines = document.getElementById('transformInput').value.split('\n');
     const underscoreCount = parseInt(document.getElementById('underscoreCount').value) || 0;
 
+    // Build Docu names (Docu01, Docu02, ...) for privacy fields so validation matches generated form
+    const docuNamesByIndex = new Map();
+    let docuCount = 0;
+    fieldItems.forEach((item, index) => {
+        if (fieldTypeOverrides.get(index) === 'privacy') {
+            docuCount++;
+            docuNamesByIndex.set(index, 'Docu' + docuCount.toString().padStart(2, '0'));
+        }
+    });
+
     fieldItems.forEach((item, index) => {
         // Use stored required status instead of reading from DOM
         const isRequired = fieldRequiredStatus.get(index) || false;
+        // Skip fieldheader – section headers are not validated
+        if (fieldTypeOverrides.get(index) === 'header') return;
         
         if (isRequired) {
-            // Get the field name from the DOM element to ensure consistency
-            const fieldTextElement = item.querySelector('.field-text');
-            let fieldName = fieldTextElement ? fieldTextElement.textContent : '';
-            
-            // If field name is not available from DOM, reconstruct it from input
-            if (!fieldName) {
-                const line = lines[index] ? lines[index].trim() : '';
-                fieldName = line
-                    .replace(/\//g, 'or') // Replace slashes with 'or'
-                    .replace(/[^a-zA-Z0-9_?()]/g, '_')
-                    .replace(/_+/g, '_')
-                    .replace(/^_|_$/g, '');
+            // Docu (privacy) fields use Docu01, Docu02 etc. in generated form - use same name in validation
+            let fieldName = docuNamesByIndex.get(index);
+            if (fieldName === undefined) {
+                // Get the field name from the DOM element to ensure consistency
+                const fieldTextElement = item.querySelector('.field-text');
+                fieldName = fieldTextElement ? fieldTextElement.textContent : '';
                 
-                if (underscoreCount > 0) {
-                    fieldName = '_'.repeat(underscoreCount) + fieldName;
-                }
-
-                // Handle duplicate field names by adding underscores
-                let finalFieldName = fieldName;
-                let duplicateUnderscoreCount = 0;
-                const usedFieldNames = new Set();
-                for (let i = 0; i < index; i++) {
-                    const prevLine = lines[i] ? lines[i].trim() : '';
-                    let prevFieldName = prevLine
+                // If field name is not available from DOM, reconstruct it from input
+                if (!fieldName) {
+                    const line = lines[index] ? lines[index].trim() : '';
+                    fieldName = line
                         .replace(/\//g, 'or') // Replace slashes with 'or'
                         .replace(/[^a-zA-Z0-9_?()]/g, '_')
                         .replace(/_+/g, '_')
                         .replace(/^_|_$/g, '');
+
                     if (underscoreCount > 0) {
-                        prevFieldName = '_'.repeat(underscoreCount) + prevFieldName;
+                        fieldName = '_'.repeat(underscoreCount) + fieldName;
                     }
-                    usedFieldNames.add(prevFieldName);
+
+                    // Handle duplicate field names by adding underscores
+                    let finalFieldName = fieldName;
+                    let duplicateUnderscoreCount = 0;
+                    const usedFieldNames = new Set();
+                    for (let i = 0; i < index; i++) {
+                        if (docuNamesByIndex.has(i)) {
+                            usedFieldNames.add(docuNamesByIndex.get(i));
+                        } else {
+                            const prevLine = lines[i] ? lines[i].trim() : '';
+                            let prevFieldName = prevLine
+                                .replace(/\//g, 'or') // Replace slashes with 'or'
+                                .replace(/[^a-zA-Z0-9_?()]/g, '_')
+                                .replace(/_+/g, '_')
+                                .replace(/^_|_$/g, '');
+                            if (underscoreCount > 0) {
+                                prevFieldName = '_'.repeat(underscoreCount) + prevFieldName;
+                            }
+                            usedFieldNames.add(prevFieldName);
+                        }
+                    }
+                    while (usedFieldNames.has(finalFieldName)) {
+                        duplicateUnderscoreCount++;
+                        finalFieldName = fieldName + '_'.repeat(duplicateUnderscoreCount);
+                    }
+                    fieldName = finalFieldName;
                 }
-                while (usedFieldNames.has(finalFieldName)) {
-                    duplicateUnderscoreCount++;
-                    finalFieldName = fieldName + '_'.repeat(duplicateUnderscoreCount);
-                }
-                fieldName = finalFieldName;
             }
 
             // Handle special characters like apostrophes
@@ -2600,240 +2642,42 @@ window.addEventListener('beforeunload', function(e) {
     // Most browsers will show a default confirmation dialog
 });
 
-// ===== DUPLICATE FIELD NAMES DETECTION =====
-
-// Global variables for duplicate handling
-let duplicateData = {
-    duplicates: {},
-    originalCode: '',
-    fixedCode: ''
-};
-
-// Function to detect duplicate field names in pasted code
-function detectDuplicateFieldNames(code) {
-    const fieldNames = [];
-    
-    // Pattern 1: HTML name attributes (name="fieldname" or name='fieldname')
-    const htmlNameRegex = /name\s*=\s*["']([^"']+)["']/gi;
-    let match;
-    
-    while ((match = htmlNameRegex.exec(code)) !== null) {
-        const fieldName = match[1].trim();
-        if (fieldName) {
-            fieldNames.push(fieldName);
-        }
-    }
-    
-    // Pattern 2: PHP function parameters (like $input->chkboxVal('fieldname', ...))
-    const phpFieldRegex = /\$input->\w+\(['"]([^'"]+)['"]/gi;
-    
-    while ((match = phpFieldRegex.exec(code)) !== null) {
-        const fieldName = match[1].trim();
-        if (fieldName) {
-            fieldNames.push(fieldName);
-        }
-    }
-    
-    // Pattern 3: PHP label function parameters (like $input->label('fieldname', ...))
-    // REMOVED: Label text should not be considered as field names for duplicate detection
-    // Labels are display text, not actual field identifiers
-    
-    // Count occurrences of each field name
-    const nameCounts = {};
-    fieldNames.forEach(name => {
-        nameCounts[name] = (nameCounts[name] || 0) + 1;
-    });
-    
-    // Filter out names that appear only once
-    const duplicates = {};
-    Object.keys(nameCounts).forEach(name => {
-        if (nameCounts[name] > 1) {
-            duplicates[name] = nameCounts[name];
-        }
-    });
-    
-    return duplicates;
-}
-
-// Function to fix duplicate field names by adding underscores
-function fixDuplicateFieldNames(code, duplicates) {
-    let fixedCode = code;
-    
-    // Sort duplicates by name to ensure consistent replacement order
-    const sortedDuplicates = Object.keys(duplicates).sort();
-    
-    sortedDuplicates.forEach(duplicateName => {
-        let occurrenceCount = 0;
-        
-        // Pattern 1: HTML name attributes
-        const htmlPattern = new RegExp(`name\\s*=\\s*["']${duplicateName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["']`, 'gi');
-        fixedCode = fixedCode.replace(htmlPattern, (match) => {
-            occurrenceCount++;
-            if (occurrenceCount === 1) {
-                return match; // Keep first occurrence unchanged
-            } else {
-                const underscores = '_'.repeat(occurrenceCount - 1);
-                const newName = `${duplicateName}${underscores}`;
-                return match.replace(duplicateName, newName);
-            }
-        });
-        
-        // Reset occurrence count for next pattern
-        occurrenceCount = 0;
-        
-        // Pattern 2: PHP function parameters - but EXCLUDE label functions
-        // This pattern matches $input->fields, $input->select, $input->radio, etc. but NOT $input->label
-        const phpPattern = new RegExp(`\\$input->(?!label\\b)\\w+\\s*\\(\\s*['"]${duplicateName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`, 'gi');
-        fixedCode = fixedCode.replace(phpPattern, (match) => {
-            occurrenceCount++;
-            if (occurrenceCount === 1) {
-                return match; // Keep first occurrence unchanged
-            } else {
-                const underscores = '_'.repeat(occurrenceCount - 1);
-                const newName = `${duplicateName}${underscores}`;
-                return match.replace(duplicateName, newName);
-            }
-        });
-    });
-    
-    return fixedCode;
-}
-
-// Function to show duplicate modal
-function showDuplicateModal(duplicates) {
-    const modal = document.getElementById('duplicateModal');
-    const duplicateList = document.getElementById('duplicateList');
-    
-    // Clear previous content
-    duplicateList.innerHTML = '';
-    
-    // Add duplicate items to the list
-    Object.keys(duplicates).forEach(name => {
-        const count = duplicates[name];
-        const item = document.createElement('div');
-        item.className = 'duplicate-item';
-        item.innerHTML = `
-            <span class="duplicate-name">${name}</span>
-            <span class="duplicate-count">${count} occurrences</span>
-        `;
-        duplicateList.appendChild(item);
-    });
-    
-    // Show the modal
-    modal.style.display = 'block';
-}
-
-// Function to close duplicate modal
-function closeDuplicateModal() {
-    const modal = document.getElementById('duplicateModal');
-    modal.style.display = 'none';
-}
-
-// Function to show "no duplicates found" modal
-function showNoDuplicatesModal() {
-    const modal = document.getElementById('noDuplicatesModal');
-    modal.style.display = 'block';
-}
-
-// Function to close "no duplicates found" modal
-function closeNoDuplicatesModal() {
-    const modal = document.getElementById('noDuplicatesModal');
-    modal.style.display = 'none';
-}
-
-// Function to fix duplicates and update the textarea
-function fixDuplicateNames() {
-    if (duplicateData.duplicates && Object.keys(duplicateData.duplicates).length > 0) {
-        // Instead of just fixing the existing code, regenerate it from the original input
-        // This ensures that labels use the correct original text without underscores
-        const input = document.getElementById('transformInput').value;
-        if (input.trim() !== '') {
-            // Regenerate the code from the original input to ensure correct labels
-            updateGeneratedCode();
-        } else {
-            // Fallback to the old method if no input is available
-            const fixedCode = fixDuplicateFieldNames(duplicateData.originalCode, duplicateData.duplicates);
-            const textarea = document.getElementById('generatedCodeOutput');
-            textarea.value = fixedCode;
-        }
-    }
-    
-    closeDuplicateModal();
-}
-
-// Function to manually check for duplicates in the generated code
-function checkDuplicates() {
-    const textarea = document.getElementById('generatedCodeOutput');
-    const code = textarea.value;
-    
-    if (!code.trim()) {
-        alert('Please paste or generate some form code first.');
-        return;
-    }
-    
-    // Detect duplicates in the code
-    const duplicates = detectDuplicateFieldNames(code);
-    
-    if (Object.keys(duplicates).length > 0) {
-        // Store the data for later use
-        duplicateData.duplicates = duplicates;
-        duplicateData.originalCode = code;
-        
-        // Show the duplicate modal
-        showDuplicateModal(duplicates);
-    } else {
-        // Show the "no duplicates found" modal
-        showNoDuplicatesModal();
-    }
-}
-
-// Add event listener to the generated code textarea for paste events
+// --- THEME TOGGLE (DAY / NIGHT) ---
 document.addEventListener('DOMContentLoaded', function() {
-    const generatedCodeTextarea = document.getElementById('generatedCodeOutput');
-    
-    if (generatedCodeTextarea) {
-        generatedCodeTextarea.addEventListener('paste', function(e) {
-            // Use setTimeout to allow the paste to complete
-            setTimeout(() => {
-                const pastedCode = this.value;
-                
-                // Detect duplicates in the pasted code
-                const duplicates = detectDuplicateFieldNames(pastedCode);
-                
-                if (Object.keys(duplicates).length > 0) {
-                    // Store the data for later use
-                    duplicateData.duplicates = duplicates;
-                    duplicateData.originalCode = pastedCode;
-                    
-                    // Show the duplicate modal
-                    showDuplicateModal(duplicates);
-                }
-            }, 100);
-        });
+    const body = document.body;
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    if (!toggleBtn) return;
+
+    const STORAGE_KEY = 'fast_forms_theme';
+
+    function applyTheme(theme) {
+        if (theme === 'night') {
+            body.classList.add('theme-night');
+            toggleBtn.textContent = 'Night Mode';
+        } else {
+            body.classList.remove('theme-night');
+            toggleBtn.textContent = 'Day Mode';
+        }
     }
-    
-    // Close modals when clicking outside of them
-    window.addEventListener('click', function(e) {
-        const duplicateModal = document.getElementById('duplicateModal');
-        const noDuplicatesModal = document.getElementById('noDuplicatesModal');
-        
-        if (e.target === duplicateModal) {
-            closeDuplicateModal();
-        }
-        if (e.target === noDuplicatesModal) {
-            closeNoDuplicatesModal();
-        }
+
+    // Initial theme: stored preference -> system preference -> default day
+    let initialTheme = localStorage.getItem(STORAGE_KEY);
+    if (!initialTheme) {
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        initialTheme = prefersDark ? 'night' : 'day';
+    }
+    applyTheme(initialTheme);
+
+    toggleBtn.addEventListener('click', function() {
+        const isNight = body.classList.contains('theme-night');
+        const nextTheme = isNight ? 'day' : 'night';
+        applyTheme(nextTheme);
+        localStorage.setItem(STORAGE_KEY, nextTheme);
     });
-    
-    // Close modals with Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeDuplicateModal();
-            closeNoDuplicatesModal();
-        }
-    });
-    
-    // Auto-adjust height for generated code textarea (very simple, non-intrusive)
+});
+
+// Auto-adjust height for generated code textarea (very simple, non-intrusive)
+document.addEventListener('DOMContentLoaded', function() {
     // Only adjusts visual height, never touches value or interferes with code generation
     (function() {
         const textarea = document.getElementById('generatedCodeOutput');
