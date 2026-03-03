@@ -2387,11 +2387,11 @@ function copyGeneratedCode() {
     navigator.clipboard.writeText(output.value).then(() => {
         const btn = document.getElementById('copyGeneratedBtn');
         btn.textContent = "Copied!";
-        btn.style.backgroundColor = '#d63384';
+        btn.style.backgroundColor = '#16a34a';
 
         setTimeout(() => {
             btn.textContent = "Copy";
-            btn.style.backgroundColor = '#f06292';
+            btn.style.backgroundColor = '';
         }, 1500);
     }).catch(err => {
         console.error('Failed to copy code: ', err);
@@ -2420,11 +2420,11 @@ function copyTransformedText() {
     navigator.clipboard.writeText(textToCopy.trim()).then(() => {
         const btn = document.getElementById('copyTransformBtn');
         btn.textContent = "Copied!";
-        btn.style.backgroundColor = '#d63384';
+        btn.style.backgroundColor = '#16a34a';
 
         setTimeout(() => {
             btn.textContent = "Copy";
-            btn.style.backgroundColor = '#f06292';
+            btn.style.backgroundColor = '';
         }, 1500);
     }).catch(err => {
         console.error('Failed to copy text: ', err);
@@ -2615,11 +2615,11 @@ function copyValidationCode() {
     navigator.clipboard.writeText(output.value).then(() => {
         const btn = document.getElementById('copyValidationBtn');
         btn.textContent = "Copied!";
-        btn.style.backgroundColor = '#d63384';
+        btn.style.backgroundColor = '#16a34a';
 
         setTimeout(() => {
             btn.textContent = "Copy";
-            btn.style.backgroundColor = '#f06292';
+            btn.style.backgroundColor = '';
         }, 1500);
     }).catch(err => {
         console.error('Failed to copy validation code: ', err);

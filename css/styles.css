@@ -71,7 +71,9 @@ body {
     overflow-x: hidden;
 }
 
+
 /* Keep all typography unified and minimal */
+
 input,
 textarea,
 button,
@@ -1240,7 +1242,7 @@ body.version3 .btn-tool:hover {
 .column-merge-modal {
     position: fixed;
     top: 30%;
-    left: 50%;
+    left: 60%;
     transform: translate(-50%, -50%);
     background: rgba(255, 255, 255, 0.6);
     backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
@@ -1381,7 +1383,9 @@ body.version3 .search-input:focus {
     justify-content: flex-end;
 }
 
+
 /* Align transformer Copy button to the right in Output Fields */
+
 #copyTransformBtn {
     align-self: flex-end;
 }
