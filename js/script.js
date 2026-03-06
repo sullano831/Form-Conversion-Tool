@@ -487,6 +487,24 @@ function generateCode(type) {
 </div>`;
             break;
 
+        case 'Attachment':
+            code = `<div class="row g-3 mb-3">
+    <div class="col-md-12">
+        <div class="form_box">
+            <div class="form_box_col1">
+                <div class="group">
+                    <?php
+                    // Label with accepted file formats and size info (change label e.g. Attach Resume)
+                    $input->label('Attach Resume <span class="subs">(accepted file formats: .doc, .docx, .pdf | Max: 10MB)</span>', '');
+                    $input->files('', 'file', '', 'required', 'doc,docx,pdf', '10MB');
+                    ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>`;
+            break;
+
         case 'Table':
             code = `<div class="row g-3 mb-3">
         <div class="col-md-12">
@@ -877,6 +895,34 @@ function generateCodeForVersion(type) {
 </div>`;
                 break;
 
+            case 'Attachment':
+                code = `<div class="form_box">
+   <div class="form_box_col1">
+      <div class="group">
+                <?php
+            // @param label-name, if required (change label e.g. Attach Resume)
+            $input->label('Attach Resume <span style="font-style: italic; font-size: 13px; text-transform: lowercase; color:#b1b1b1;">(accepted file formats: .doc, .docx, .pdf | Max: 10MB)</span>', '*');
+            ?>
+            <!-- Hidden default file input - name="attachment[]" is fixed -->
+                <input type="file" name="attachment[]" id="file_ar" class="input-file" style="display: none;" multiple>
+
+                <!-- Custom label to act as file upload button -->
+                <label for="file_ar" class="btn btn-tertiary js-labelFile">
+                    <span class="js-fileName">Choose a file</span>
+                    <span class="icon"><i class="fas fa-plus-circle"></i></span>
+                </label>
+
+                <!-- Error message box -->
+                <div id="error-message-ar" class="valid_Extension_Message error-message" style="display: none;">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Upload Error!</strong>
+                    <span class="suberror"></span>
+                </div>
+            </div>
+   </div>
+</div>`;
+                break;
+
             case 'Table':
                 code = `<div class="form_box">
    <div class="form_box_col1">
@@ -1015,6 +1061,9 @@ function transformText() {
                         </button>
                         <button class="field-type-btn ${currentFieldType === 'privacy' ? 'active' : ''}" data-field-type="privacy" onclick="setFieldType(${index}, 'privacy')" title="Docu Checkbox">
                             🔒
+                        </button>
+                        <button class="field-type-btn ${currentFieldType === 'attachment' ? 'active' : ''}" data-field-type="attachment" onclick="setFieldType(${index}, 'attachment')" title="Attachment">
+                            📎
                         </button>
                         <button class="field-type-btn ${currentFieldType === 'textarea' ? 'active' : ''}" data-field-type="textarea" onclick="setFieldType(${index}, 'textarea')" title="Textarea">
                             <span class="textarea-icon">📝</span>
@@ -1313,6 +1362,24 @@ function generateFormCodeBootstrap(inputText) {
                     ?>
                 </div>
             </div>`;
+            } else if (customFieldType === 'attachment') {
+                // Attachment: name="attachment[]" is fixed; only label is customizable (e.g. "Attach Resume")
+                fieldCode = `<div class="row g-3 mb-3">
+    <div class="col-md-12">
+        <div class="form_box">
+            <div class="form_box_col1">
+                <div class="group">
+                    <?php
+                    // Label with accepted file formats and size info
+                    $input->label('${labelText} <span class="subs">(accepted file formats: .doc, .docx, .pdf | Max: 10MB)</span>', '');
+                    $input->files('', 'file', '', ${requiredText}, 'doc,docx,pdf', '10MB');
+                    ?>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>`;
             } else if (customFieldType === 'privacy') {
                 // Docu Checkbox with custom text - use incremented naming (Bootstrap form-check)
                 privacyPolicyCounter++;
@@ -1623,6 +1690,35 @@ function generateFormCodeVersion3(inputText) {
       </div>
    </div>
 </div>`;
+            } else if (customFieldType === 'attachment') {
+                // Attachment: name="attachment[]" is fixed; only label is customizable (e.g. "Attach Resume")
+                const fileId = `file_ar_${index}`;
+                const errorId = `error-message-ar-${index}`;
+                fieldCode = `<div class="form_box">
+   <div class="form_box_col1">
+      <div class="group">
+                <?php
+            // @param label-name, if required
+            $input->label('${labelText} <span style="font-style: italic; font-size: 13px; text-transform: lowercase; color:#b1b1b1;">(accepted file formats: .doc, .docx, .pdf | Max: 10MB)</span>', '${labelSuffix}');
+            ?>
+            <!-- Hidden default file input -->
+                <input type="file" name="attachment[]" id="${fileId}" class="input-file" style="display: none;" multiple>
+
+                <!-- Custom label to act as file upload button -->
+                <label for="${fileId}" class="btn btn-tertiary js-labelFile">
+                    <span class="js-fileName">Choose a file</span>
+                    <span class="icon"><i class="fas fa-plus-circle"></i></span>
+                </label>
+
+                <!-- Error message box -->
+                <div id="${errorId}" class="valid_Extension_Message error-message" style="display: none;">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Upload Error!</strong>
+                    <span class="suberror"></span>
+                </div>
+            </div>
+   </div>
+</div>`;
             } else if (customFieldType === 'privacy') {
                 // Docu Checkbox - version 3 uses form validation (no HTML required attribute)
                 privacyPolicyCounter++;
@@ -1644,9 +1740,9 @@ function generateFormCodeVersion3(inputText) {
    </div>
 </div>`;
             }
-                    } else {
-                // Auto-detect field type based on text content
-                if (lowerText.includes('date') || lowerText.includes('birth') || lowerText.includes('dob')) {
+        } else {
+            // Auto-detect field type based on text content
+            if (lowerText.includes('date') || lowerText.includes('birth') || lowerText.includes('dob')) {
                     fieldCode = `<div class="form_box">
    <div class="form_box_col1">
       <div class="group">
@@ -1872,6 +1968,35 @@ function generateFormCodeWithRequiredVersion3(inputText, fieldData) {
             $input->textarea('${fieldName}', 'text form_field','${fieldName}','placeholder="Enter your ${originalText.toLowerCase()} here"');
          ?>
       </div>
+   </div>
+</div>`;
+            } else if (customFieldType === 'attachment') {
+                // Attachment: name="attachment[]" is fixed; only label is customizable
+                const fileId = `file_ar_${index}`;
+                const errorId = `error-message-ar-${index}`;
+                fieldCode = `<div class="form_box">
+   <div class="form_box_col1">
+      <div class="group">
+                <?php
+            // @param label-name, if required
+            $input->label('${labelText} <span style="font-style: italic; font-size: 13px; text-transform: lowercase; color:#b1b1b1;">(accepted file formats: .doc, .docx, .pdf | Max: 10MB)</span>', '${labelSuffix}');
+            ?>
+            <!-- Hidden default file input -->
+                <input type="file" name="attachment[]" id="${fileId}" class="input-file" style="display: none;" multiple>
+
+                <!-- Custom label to act as file upload button -->
+                <label for="${fileId}" class="btn btn-tertiary js-labelFile">
+                    <span class="js-fileName">Choose a file</span>
+                    <span class="icon"><i class="fas fa-plus-circle"></i></span>
+                </label>
+
+                <!-- Error message box -->
+                <div id="${errorId}" class="valid_Extension_Message error-message" style="display: none;">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Upload Error!</strong>
+                    <span class="suberror"></span>
+                </div>
+            </div>
    </div>
 </div>`;
             } else if (customFieldType === 'privacy') {
@@ -2206,6 +2331,23 @@ function generateFormCodeWithRequiredBootstrap(inputText, fieldData) {
                     ?>
                 </div>
             </div>`;
+            } else if (customFieldType === 'attachment') {
+                // Attachment: name="attachment[]" is fixed; only label is customizable
+                fieldCode = `<div class="row g-3 mb-3">
+  <div class="col-md-12">
+    <div class="form_box">
+      <div class="form_box_col1">
+        <div class="group">
+          <?php
+          // Label with accepted file formats and size info
+          $input->label('${originalText} <span class="subs">(accepted file formats: .doc, .docx, .pdf | Max: 10MB)</span>', '');
+          $input->files('', 'file', '', ${requiredText}, 'doc,docx,pdf', '10MB');
+          ?>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
             } else if (customFieldType === 'privacy') {
                 // Docu Checkbox - Bootstrap form-check format
                 privacyPolicyCounter++;
@@ -2478,6 +2620,11 @@ function generateValidationCode() {
         if (fieldTypeOverrides.get(index) === 'header') return;
         
         if (isRequired) {
+            // Attachment fields always use name="attachment[]" in Version 2 · Modern - use same in validation
+            if (fieldTypeOverrides.get(index) === 'attachment') {
+                requiredFields.push('"attachment[]"');
+                return;
+            }
             // Docu (privacy) fields use Docu01, Docu02 etc. in generated form - use same name in validation
             let fieldName = docuNamesByIndex.get(index);
             if (fieldName === undefined) {
@@ -2526,9 +2673,9 @@ function generateValidationCode() {
                 }
             }
 
-            // Handle special characters like apostrophes
-            if (fieldName.includes("'")) {
-                fieldName = `"${fieldName}"`;
+            // Wrap in double quotes when name contains any character that needs quoting (e.g. apostrophe, space, hyphen)
+            if (/[^a-zA-Z0-9_]/.test(fieldName)) {
+                fieldName = `"${String(fieldName).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
             }
 
             requiredFields.push(fieldName);
@@ -2591,8 +2738,9 @@ function generateValidationCode() {
                     fieldName = finalFieldName;
                 }
 
-                if (fieldName.includes("'")) {
-                    fieldName = `"${fieldName}"`;
+                // Same as required fields: wrap in double quotes when name has special characters
+                if (/[^a-zA-Z0-9_]/.test(fieldName)) {
+                    fieldName = `"${String(fieldName).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
                 }
 
                 emailFields.push(fieldName);
