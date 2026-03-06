@@ -998,25 +998,25 @@ function transformText() {
                 <span class="field-text">${finalFieldName}</span>
                 <div class="field-controls">
                     <div class="field-type-buttons">
-                        <button class="field-type-btn ${currentFieldType === 'normal' ? 'active' : ''}" onclick="setFieldType(${index}, 'normal')" title="Normal Text">
+                        <button class="field-type-btn ${currentFieldType === 'normal' ? 'active' : ''}" data-field-type="normal" onclick="setFieldType(${index}, 'normal')" title="Normal Text">
                             📝
                         </button>
-                        <button class="field-type-btn ${currentFieldType === 'header' ? 'active' : ''}" onclick="setFieldType(${index}, 'header')" title="Field Header">
+                        <button class="field-type-btn ${currentFieldType === 'header' ? 'active' : ''}" data-field-type="header" onclick="setFieldType(${index}, 'header')" title="Field Header">
                             📄
                         </button>
-                        <button class="field-type-btn ${currentFieldType === 'radio' ? 'active' : ''}" onclick="setFieldType(${index}, 'radio')" title="Radio Buttons">
+                        <button class="field-type-btn ${currentFieldType === 'radio' ? 'active' : ''}" data-field-type="radio" onclick="setFieldType(${index}, 'radio')" title="Radio Buttons">
                             🔘
                         </button>
-                        <button class="field-type-btn ${currentFieldType === 'select' ? 'active' : ''}" onclick="setFieldType(${index}, 'select')" title="Dropdown">
+                        <button class="field-type-btn ${currentFieldType === 'select' ? 'active' : ''}" data-field-type="select" onclick="setFieldType(${index}, 'select')" title="Dropdown">
                             📋
                         </button>
-                        <button class="field-type-btn ${currentFieldType === 'checkbox' ? 'active' : ''}" onclick="setFieldType(${index}, 'checkbox')" title="Checkbox">
+                        <button class="field-type-btn ${currentFieldType === 'checkbox' ? 'active' : ''}" data-field-type="checkbox" onclick="setFieldType(${index}, 'checkbox')" title="Checkbox">
                             ☑️
                         </button>
-                        <button class="field-type-btn ${currentFieldType === 'privacy' ? 'active' : ''}" onclick="setFieldType(${index}, 'privacy')" title="Docu Checkbox">
+                        <button class="field-type-btn ${currentFieldType === 'privacy' ? 'active' : ''}" data-field-type="privacy" onclick="setFieldType(${index}, 'privacy')" title="Docu Checkbox">
                             🔒
                         </button>
-                        <button class="field-type-btn ${currentFieldType === 'textarea' ? 'active' : ''}" onclick="setFieldType(${index}, 'textarea')" title="Textarea">
+                        <button class="field-type-btn ${currentFieldType === 'textarea' ? 'active' : ''}" data-field-type="textarea" onclick="setFieldType(${index}, 'textarea')" title="Textarea">
                             <span class="textarea-icon">📝</span>
                         </button>
                     </div>
@@ -1071,6 +1071,22 @@ function setFieldType(index, type) {
     
     // Regenerate the text transformation
     transformText();
+    
+    // Explicitly update button active state so highlight is always visible (fixes Bootstrap/theme)
+    requestAnimationFrame(function () {
+        const fieldItem = document.querySelector('.field-item[data-index="' + index + '"]');
+        if (fieldItem) {
+            const btns = fieldItem.querySelectorAll('.field-type-btn');
+            btns.forEach(function (btn) {
+                var btnType = btn.getAttribute('data-field-type');
+                if (btnType === type) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+    });
     
     // Update the generated code to reflect any changes
     updateGeneratedCode();
@@ -2004,7 +2020,7 @@ function generateFormCodeWithRequiredVersion3(inputText, fieldData) {
 }
 
 function toggleRequired(index) {
-    const button = document.querySelector(`.required-btn[data-index="${index}"]`);
+    const button = document.querySelector('.required-btn[data-index="' + index + '"]');
     
     // If button doesn't exist (e.g., for privacy fields), do nothing
     if (!button) return;

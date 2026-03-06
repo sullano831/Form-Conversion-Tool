@@ -933,6 +933,82 @@ body.version3 .field-item:hover {
     background: var(--accent);
     border-color: var(--accent);
     color: var(--white);
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.4);
+}
+
+/* Bootstrap: match Version 2 - Modern icon selection look (dark container, solid green when selected) */
+body.bootstrap .output-container {
+    background: rgba(2, 44, 34, 0.97);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2), 0 1px 0 rgba(34, 197, 94, 0.15);
+}
+
+body.bootstrap .output-container .placeholder-text {
+    color: rgba(187, 247, 208, 0.85);
+}
+
+body.bootstrap .field-item {
+    background: rgba(6, 46, 35, 0.95);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(34, 197, 94, 0.08);
+}
+
+body.bootstrap .field-item:hover {
+    border-color: rgba(34, 197, 94, 0.6);
+    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.2);
+}
+
+body.bootstrap .field-item .field-text {
+    color: #e5fbe9;
+}
+
+body.bootstrap .field-type-btn {
+    background: rgba(6, 46, 35, 0.98);
+    border: 1px solid rgba(34, 197, 94, 0.45);
+    color: #e5fbe9;
+    box-shadow: inset 0 1px 0 rgba(34, 197, 94, 0.1);
+}
+
+body.bootstrap .field-type-btn:hover {
+    background: var(--accent-muted);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+body.bootstrap .field-type-btn.active,
+body.bootstrap .field-type-btn.active:hover {
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: var(--white) !important;
+    box-shadow: none;
+}
+
+body.bootstrap .options-textbox {
+    background: rgba(6, 46, 35, 0.98);
+    border-color: rgba(34, 197, 94, 0.45);
+    color: #e5fbe9;
+}
+
+body.bootstrap .options-textbox::placeholder {
+    color: rgba(187, 247, 208, 0.6);
+}
+
+body.bootstrap .options-textbox:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-muted);
+}
+
+body.bootstrap .required-btn {
+    background: rgba(6, 46, 35, 0.98);
+    border-color: rgba(34, 197, 94, 0.45);
+    color: #e5fbe9;
+}
+
+body.theme-night .field-type-btn.active {
+    background: var(--accent);
+    border-color: #4ade80;
+    color: #022c22;
+    box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.5);
 }
 
 body.version3 .field-type-btn:hover {
@@ -997,6 +1073,14 @@ body.version3 .options-textbox:focus {
 }
 
 .required-btn.required {
+    background: var(--error);
+    color: var(--white);
+    border-color: var(--error);
+    box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.35);
+}
+
+body.bootstrap .required-btn.required,
+body.theme-night .required-btn.required {
     background: var(--error);
     color: var(--white);
     border-color: var(--error);
